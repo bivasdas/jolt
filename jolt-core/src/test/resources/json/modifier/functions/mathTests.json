@@ -5,6 +5,9 @@
         },
         "data2": {
             "value": -2.0
+        },
+        "data3": {
+            "value": [-1,2,3.0]
         }
     },
 
@@ -21,6 +24,13 @@
             "min": "=min(@(1,value),^value,0)",
             "integer": "=toInteger(@(1,value))",
             "value": "=abs"
+        },
+        "data3": {
+            "min": "=min(@(1,value))",
+            "max": "=max(@(1,value))",
+            "int": "=toInteger(@(1,value))",
+            "double": "=toDouble(@(1,value))",
+            "abs": "=abs(@(1,value))"
         }
     },
 
@@ -41,8 +51,14 @@
             "min" : -2.0,
             "integer" : -2,
             "value" : 2.0
+        },
+        "data3" : {
+            "value" : [ -1, 2, 3.0 ],
+            "min" : -1,
+            "max" : 3.0,
+            "int" : [ -1, 2, 3 ],
+            "double" : [ -1.0, 2.0, 3.0 ],
+            "abs" : [ 1, 2, 3.0 ]
         }
-
-
     }
 }
