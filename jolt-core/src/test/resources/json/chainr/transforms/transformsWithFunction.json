@@ -1,0 +1,13 @@
+[
+    {
+        "operation" : "modify-overwrite-beta",
+        "spec" : {
+            "f1" : "=func1",
+            "f2" : "=func2"
+        },
+        "functions": {
+            "func1": "com.bazaarvoice.jolt.chainr.functions.SimpleFunction",
+            "func2": "com.bazaarvoice.jolt.chainr.functions.SimpleFunction$InnerClassFunction"
+        }
+    }
+]

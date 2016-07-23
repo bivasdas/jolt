@@ -25,6 +25,7 @@ import com.bazaarvoice.jolt.Shiftr;
 import com.bazaarvoice.jolt.Sortr;
 import com.bazaarvoice.jolt.SpecDriven;
 import com.bazaarvoice.jolt.exception.SpecException;
+import com.bazaarvoice.jolt.modifier.function.Function;
 import com.bazaarvoice.jolt.utils.StringTools;
 
 import java.util.Collections;
@@ -61,6 +62,7 @@ public class ChainrEntry {
 
     public static final String OPERATION_KEY = "operation";
     public static final String SPEC_KEY = "spec";
+    public static final String FUNCTION_KEY = "functions";
 
     private final int index;
     private final Object spec;
@@ -68,6 +70,7 @@ public class ChainrEntry {
 
     private final Class<? extends JoltTransform> joltTransformClass;
     private final boolean isSpecDriven;
+    private final Map<String, Class<? extends Function>> functionClassMap;
 
     /**
      * Process an element from the Chainr Spec into a ChainrEntry class.
@@ -109,6 +112,49 @@ public class ChainrEntry {
         if ( isSpecDriven && ! chainrEntryMap.containsKey( SPEC_KEY ) ) {
             throw new SpecException( "JOLT Chainr - Transform className:" + joltTransformClass.getName() + " requires a spec" + getErrorMessageIndexSuffix() );
         }
+
+        if(chainrEntryMap.containsKey( FUNCTION_KEY )) {
+            functionClassMap = loadFunctionClassMap(chainrEntryMap.get( FUNCTION_KEY ));
+        }
+        else {
+            functionClassMap = new HashMap<>(  );
+        }
+    }
+
+    private Map<String, Class<? extends  Function>> loadFunctionClassMap( final Object object ) {
+        if ( ! (object instanceof Map ) ) {
+            throw new SpecException( "JOLT ChainrEntry function expects a JSON map - Malformed spec" + getErrorMessageIndexSuffix() );
+        }
+
+        @SuppressWarnings( "unchecked" ) // We know it is a Map due to the check above
+        Map<String,String> functionMapFromSpec = (Map<String, String>) object;
+        Map<String, Class<? extends Function>> functionMap = new HashMap<>( );
+
+        for(Map.Entry<String,String> entry: functionMapFromSpec.entrySet()) {
+            String functionKey = entry.getKey();
+            String functionClassAsString = entry.getValue();
+
+            if ( StringTools.isBlank(functionKey) ) {
+                throw new SpecException( "Got invalid function key: " + functionKey + " for chainr entry" + getErrorMessageIndexSuffix() );
+            }
+
+            try {
+                Class opClass = Class.forName( functionClassAsString );
+
+                if ( ! Function.class.isAssignableFrom( opClass ) ) {
+                    throw new SpecException( "Specified function does not implement Function interface at key: " + functionKey + " for chainr entry" + getErrorMessageIndexSuffix() );
+                }
+
+                @SuppressWarnings( "unchecked" ) // We know it is some type of Transform due to the check above
+                Class<? extends Function> functionClass = (Class<? extends Function>) opClass;
+
+                functionMap.put( functionKey, functionClass );
+            } catch ( ClassNotFoundException e ) {
+                throw new SpecException( "JOLT Chainr could not find function class:" + functionClassAsString + getErrorMessageIndexSuffix(), e );
+            }
+        }
+
+        return functionMap;
     }
 
     private String extractOperationString( Map<String, Object> chainrEntryMap ) {
@@ -179,5 +225,13 @@ public class ChainrEntry {
      */
     public boolean isSpecDriven() {
         return isSpecDriven;
+    }
+
+    public Map<String, Class<? extends Function>> getFunctionClassMap() {
+        return functionClassMap;
+    }
+
+    public boolean hasFunctions() {
+        return !functionClassMap.isEmpty();
     }
 }

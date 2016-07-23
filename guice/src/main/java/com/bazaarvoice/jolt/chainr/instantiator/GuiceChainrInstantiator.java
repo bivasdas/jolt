@@ -18,10 +18,15 @@ package com.bazaarvoice.jolt.chainr.instantiator;
 import com.bazaarvoice.jolt.JoltTransform;
 import com.bazaarvoice.jolt.chainr.spec.ChainrEntry;
 import com.bazaarvoice.jolt.exception.SpecException;
+import com.bazaarvoice.jolt.modifier.function.Function;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Stage;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class allows Transforms specified in Chainr spec files to be loaded via Guice.
@@ -39,14 +44,14 @@ import com.google.inject.Module;
 public class GuiceChainrInstantiator implements ChainrInstantiator {
 
     private final Module parentModule;
-    private final Injector nonSpecInjector;
+    private final Injector parentInjector;
 
     /**
      * @param parentModule Guice module that will be used to create an injector to instantiate Transform classes
      */
     public GuiceChainrInstantiator( Module parentModule ) {
         this.parentModule = parentModule;
-        this.nonSpecInjector = Guice.createInjector( parentModule );
+        this.parentInjector = Guice.createInjector( Stage.PRODUCTION, parentModule );
     }
 
     @Override
@@ -54,14 +59,19 @@ public class GuiceChainrInstantiator implements ChainrInstantiator {
 
         final Class<? extends JoltTransform> transformClass = entry.getJoltTransformClass();
         final Object transformSpec = entry.getSpec();
+        Injector customInjector;
 
         try {
+            if(entry.hasFunctions()) {
+                Map<String, Class<? extends Function>> functionClassMap = entry.getFunctionClassMap();
+                final Map<String, Function> functionMap = new HashMap<>(  );
 
-            if ( entry.isSpecDriven() ) {
-
-                // In order to inject an "Object" into the constructor of a SpecTransform, we create an Injector just for this class.
-                Injector injector;
-                injector = Guice.createInjector( new AbstractModule() {
+                for(Map.Entry<String, Class<? extends Function>> functionEntry: functionClassMap.entrySet()) {
+                    String functionKey = functionEntry.getKey();
+                    Function function = parentInjector.getInstance( functionEntry.getValue() );
+                    functionMap.put( functionKey, function );
+                }
+                customInjector = Guice.createInjector( Stage.PRODUCTION, new AbstractModule() {
                     @Override
                     protected void configure() {
 
@@ -70,16 +80,31 @@ public class GuiceChainrInstantiator implements ChainrInstantiator {
 
                         // Bind the "spec" for the transform
                         bind( Object.class ).toInstance( transformSpec );
+                        // Bind the "function" for the transform
+                        bind( Map.class ).toInstance( functionMap );
                     }
                 } );
-
-                return injector.getInstance( transformClass );
-
-            } else {
-                // else normal no-op constructor OR non-spec constructor with @Inject annotation
-                return nonSpecInjector.getInstance( transformClass );
+            }
+            else if (entry.isSpecDriven()) {
+                customInjector = Guice.createInjector( Stage.PRODUCTION, new AbstractModule() {
+                    @Override
+                    protected void configure() {
+                        install( parentModule );
+                        // Bind the "spec" for the transform
+                        bind( Object.class ).toInstance( transformSpec );
+                    }
+                } );
+            }
+            else {
+                customInjector = null;
             }
 
+            if(entry.isSpecDriven()) {
+                return customInjector.getInstance( transformClass );
+            }
+            else {
+                return parentInjector.getInstance( transformClass );
+            }
         }
         catch ( Exception creationException ) {
             throw new SpecException( "Exception using Guice to initialize class:" + transformClass.getCanonicalName() + entry.getErrorMessageIndexSuffix(), creationException );

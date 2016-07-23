@@ -85,9 +85,17 @@ public abstract class Modifier implements SpecDriven, ContextualTransform {
             throw new SpecException( opMode.name() + " expected a populated functions' map type, got " + (functionsMap == null?"null":"empty") );
         }
 
-        functionsMap = Collections.unmodifiableMap( functionsMap );
+        Map<String, Function> combinedMap = new HashMap<>(  );
+        combinedMap.putAll( functionsMap );
+        combinedMap.putAll( STOCK_FUNCTIONS );
+        functionsMap = Collections.unmodifiableMap( combinedMap );
         TemplatrSpecBuilder templatrSpecBuilder = new TemplatrSpecBuilder( opMode, functionsMap );
         rootSpec = new ModifierCompositeSpec( ROOT_KEY, (Map<String, Object>) spec, opMode, templatrSpecBuilder );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Modifier( Object spec, OpMode opMode ) {
+        this(spec, opMode, STOCK_FUNCTIONS);
     }
 
     @Override
@@ -111,7 +119,7 @@ public abstract class Modifier implements SpecDriven, ContextualTransform {
     public static final class Overwritr extends Modifier {
 
         public Overwritr( Object spec ) {
-            this( spec, STOCK_FUNCTIONS );
+            super( spec, OpMode.OVERWRITR );
         }
 
         public Overwritr( Object spec, Map<String, Function> functionsMap ) {
@@ -125,7 +133,7 @@ public abstract class Modifier implements SpecDriven, ContextualTransform {
     public static final class Definr extends Modifier {
 
         public Definr( final Object spec ) {
-            this( spec, STOCK_FUNCTIONS );
+            super( spec, OpMode.DEFINER );
         }
 
         public Definr( Object spec, Map<String, Function> functionsMap ) {
@@ -139,7 +147,7 @@ public abstract class Modifier implements SpecDriven, ContextualTransform {
     public static class Defaultr extends Modifier {
 
         public Defaultr( final Object spec ) {
-            this( spec, STOCK_FUNCTIONS );
+            super( spec, OpMode.DEFAULTR );
         }
 
         public Defaultr( Object spec, Map<String, Function> functionsMap ) {

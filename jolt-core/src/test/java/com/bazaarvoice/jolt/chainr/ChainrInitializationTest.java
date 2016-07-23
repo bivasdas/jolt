@@ -64,6 +64,23 @@ public class ChainrInitializationTest {
         Assert.assertNotNull( actual.spec );
     }
 
+    @DataProvider
+    public Object[][] functionTestCases() {
+        return new Object[][] {
+            {JsonUtils.classpathToObject( "/json/chainr/transforms/transformsWithFunction.json" )},
+            {JsonUtils.classpathToObject( "/json/chainr/transforms/transformsWithoutFunction.json" )}
+        };
+    }
+
+    @Test(dataProvider = "functionTestCases" )
+    public void testFunction(Object spec) {
+        Chainr unit = Chainr.fromSpec( spec );
+        Map result = (Map) unit.transform( new HashMap<>(  ), null );
+
+        Assert.assertEquals( result.get( "f1" ), 0 );
+        Assert.assertEquals( result.get( "f2" ), 1 );
+    }
+
     @Test( expectedExceptions = IllegalArgumentException.class )
     public void chainrBuilderFailsOnNullLoader() {
 

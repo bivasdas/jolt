@@ -21,11 +21,10 @@ import com.bazaarvoice.jolt.common.SpecStringParser;
 import com.bazaarvoice.jolt.exception.SpecException;
 import com.bazaarvoice.jolt.modifier.function.Function;
 import com.google.common.collect.Lists;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,39 +33,35 @@ import java.util.Set;
 @SuppressWarnings( "deprecated" )
 public class ModifierTest {
 
+    private static Map<String, Function> testFunctions;
+
     enum TemplatrTestCase {
         OVERWRITR {
             @Override
             Modifier getTemplatr( final Object spec ) {
-                return new Modifier.Overwritr( spec );
+                return new Modifier.Overwritr( spec, testFunctions );
             }
         },
         DEFAULTR {
             @Override
             Modifier getTemplatr( final Object spec ) {
-                return new Modifier.Defaultr(spec);
+                return new Modifier.Defaultr(spec, testFunctions);
             }
         },
         DEFINR {
             @Override
             Modifier getTemplatr( final Object spec ) {
-                return new Modifier.Definr( spec );
+                return new Modifier.Definr( spec, testFunctions );
             }
         };
 
         abstract Modifier getTemplatr(Object spec);
     }
 
-    @BeforeClass
-    @SuppressWarnings( "unchecked" )
-    public void setup() throws Exception {
-        // accessing built ins such that we can test a custom impl of function
-        // this is a special test case, and not a recommended approach of using function
-        Field f = Modifier.class.getDeclaredField("STOCK_FUNCTIONS");
-        f.setAccessible( true );
-        Map<String, Function> BUILT_INS  = (Map<String, Function>) f.get( null );
-        BUILT_INS.put( "minLabelComputation", new MinLabelComputation() );
-        BUILT_INS.put( "maxLabelComputation", new MaxLabelComputation() );
+    static {
+        testFunctions = new HashMap<>(  );
+        testFunctions.put( "minLabelComputation", new MinLabelComputation() );
+        testFunctions.put( "maxLabelComputation", new MaxLabelComputation() );
     }
 
     @DataProvider
@@ -195,7 +190,7 @@ public class ModifierTest {
     @Test( dataProvider = "fnArgParseTestCases")
     public void testFunctionArgParse(String argString, String[] expected) throws Exception {
         List<String> actual = SpecStringParser.parseFunctionArgs( argString );
-        JoltTestUtil.runArrayOrderObliviousDiffy(" failed case " + argString, expected, actual );
+        JoltTestUtil.runArrayOrderObliviousDiffy( " failed case " + argString, expected, actual );
     }
 
     @SuppressWarnings( "unused" )

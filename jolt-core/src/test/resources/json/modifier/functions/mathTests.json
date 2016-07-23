@@ -13,15 +13,15 @@
 
     "spec": {
         "data1": {
-            "max": "=max(@(1,value),^value,0)",
-            "min": "=min(@(1,value),^value,0.0)",
+            "max": "=max(@(1,value) , ^value,0)",
+            "min": "=min(@(1,value) , ^value,0.0)",
             "double": "=toDouble(@(1,value))",
             "value": "=abs"
 
         },
         "data2": {
-            "max": "=max(@(1,value),^value,0.0)",
-            "min": "=min(@(1,value),^value,0)",
+            "max": "=max(@(1,value) , ^value,0.0)",
+            "min": "=min(@(1,value) , ^value,0)",
             "integer": "=toInteger(@(1,value))",
             "value": "=abs"
         },

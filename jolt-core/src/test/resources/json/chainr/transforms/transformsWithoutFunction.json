@@ -1,0 +1,9 @@
+[
+    {
+        "operation" : "modify-overwrite-beta",
+        "spec" : {
+            "f1" : 0,
+            "f2" : 1
+        }
+    }
+]
